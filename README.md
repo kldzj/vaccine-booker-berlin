@@ -1,6 +1,6 @@
 # BOOKING IN BERLINS VACCINATION CENTERS
-This python script books automatically a slot on Doctolib in one of the public vaccination centers in Berlin. The source code is based strongly on [doctoshotgun](https://github.com/rbignon/doctoshotgun). It requires python 3.7 or higher.
 
+This python script books automatically a slot on Doctolib in one of the public vaccination centers in Berlin. The source code is based strongly on [doctoshotgun](https://github.com/rbignon/doctoshotgun). It requires python 3.7 or higher.
 
 ### Python dependencies
 
@@ -48,4 +48,18 @@ optional arguments:
   --exclude-velodrom            Exclude center at Velodrom Berlin
   --exclude-tegel               Exclude center at Flughafen Tegel
   --exclude-eisstadion          Exclude center at Erika-Heß-Eisstadion
-  ```
+```
+
+### Docker
+
+Build image:
+
+```
+docker build -t vaccine-booker .
+```
+
+Run container:
+
+```
+docker run vaccine-booker username [password]
+```
