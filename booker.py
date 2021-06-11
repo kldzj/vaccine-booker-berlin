@@ -36,7 +36,7 @@ class Session(cloudscraper.CloudScraper):
         if is_async:
             raise ValueError('Async requests are not supported')
 
-        kwargs['timeout'] = 15.0
+        kwargs['timeout'] = 10.0
         resp = super().send(*args, **kwargs)
 
         return callback(self, resp)
@@ -110,7 +110,10 @@ class AppointmentEditPage(JsonPage):
                 yield field
 
     def get_appointment_start_date(self):
-        return self.doc['appointment']['start_date']
+        if 'start_date' in self.doc['appointment']:
+            return self.doc['appointment']['start_date']
+        log('Appointment does not have start_date :/', color='red')
+        return None
 
 
 class AppointmentPostPage(JsonPage):
@@ -172,6 +175,8 @@ class Doctolib(LoginBrowser):
         self.time_window = time_window
         self.excluded_centers = excluded_centers
 
+        log('Looking for appointments...', color='green')
+
     @property
     def logged(self):
         return self._logged
@@ -218,7 +223,6 @@ class Doctolib(LoginBrowser):
         for place in self.page.get_places():
             if any(center in place['name'] for center in self.excluded_centers):
                 continue
-            log('Looking for slots in place %s', place['name'])
             for motive_name, motive_id in motives.items():
                 practice_id = place['practice_ids'][0]
                 agenda_ids = center_page.get_agenda_ids(
@@ -226,13 +230,12 @@ class Doctolib(LoginBrowser):
                 if len(agenda_ids) == 0:
                     continue
 
-                log('Motive: %s ...', motive_name)
-                if self.try_to_book_place(profile_id, motive_id, practice_id, agenda_ids):
+                if self.try_to_book_place(profile_id, motive_id, practice_id, agenda_ids, place, motive_name):
                     return True
 
         return False
 
-    def try_to_book_place(self, profile_id, motive_id, practice_id, agenda_ids):
+    def try_to_book_place(self, profile_id, motive_id, practice_id, agenda_ids, place, motive_name):
         date = datetime.date.today().strftime('%Y-%m-%d')
         while date is not None:
             try:
@@ -253,8 +256,11 @@ class Doctolib(LoginBrowser):
                 date = None
 
         if len(self.page.doc['availabilities']) == 0:
-            log('No availabilities in this center', color='red')
+            # log('No availabilities in this center', color='red')
             return False
+
+        log('Looking for slots in place %s', place['name'])
+        log('Motive: %s ...', motive_name)
 
         slot = self.page.find_best_first_slot(
             self.start_date, self.time_window)
